@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'dart:math' as math;
@@ -9,72 +8,63 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
-  runApp(const MyApp());
+  runApp(MaterialApp(
+    home: Scaffold(
+      appBar: AppBar(
+        title: const Text('Compass App'),
+      ),
+      body: const Center(
+        child: Compass(),
+      ),
+    ),
+  ));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+class Compass extends StatefulWidget {
+  const Compass({Key? key}) : super(key: key);
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<Compass> createState() => _CompassState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _CompassState extends State<Compass> {
   double azimuth = 0.0;
-  StreamSubscription? sensorSubscription;
+  double gyroAngle = 0.0;
 
   @override
   void initState() {
     super.initState();
-    startListening();
-  }
-
-  @override
-  void dispose() {
-    sensorSubscription?.cancel();
-    super.dispose();
-  }
-
-  void startListening() {
-    sensorSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+    gyroscopeEvents.listen((GyroscopeEvent event) {
       setState(() {
-        azimuth = _calculateAzimuth(event);
+        gyroAngle = calculateGyroAngle(event);
+        azimuth = math.pi * 2 - math.pi / 180 * gyroAngle;
       });
     });
   }
 
-  double _calculateAzimuth(AccelerometerEvent event) {
-    final double x = event.x;
-    final double y = event.y;
-    final double z = event.z;
-
-    final double radians = math.atan2(-x, math.sqrt(y * y + z * z));
-
-    return radians * (180 / math.pi);
+  double calculateGyroAngle(GyroscopeEvent event) {
+    // Use gyroscope data to calculate the orientation angle.
+    // Apply filtering and integration techniques for better results.
+    // This is a simplified calculation for demonstration.
+    return gyroAngle + event.y / 100.0; // Adjust the scale as needed.
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Compass'),
-        ),
-        body: Center(
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            padding: const EdgeInsets.all(20.0),
-            child: Transform.rotate(
-              angle: math.pi + math.pi / 2 - azimuth * (math.pi / 180), // Add 180 degrees to the angle
-              child: Image.asset(
-                'images/featherNorth.png',
-                fit: BoxFit.contain,
-              ),
-            ),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Transform.rotate(
+          angle: azimuth,
+          child: Image.asset(
+            'images/featherNorth.png', // Replace with your compass image path
+            width: 200.0,
+            height: 200.0,
           ),
         ),
-      ),
+        const SizedBox(height: 20.0),
+        Text('Azimuth: ${(gyroAngle * 180 / math.pi).toStringAsFixed(2)}°'),
+      ],
     );
   }
 }
